@@ -71,6 +71,7 @@ export default function RegisterPage() {
             {loading ? 'Registering...' : 'Register'}
           </Button>
         </form>
+        <a href="/login" className="text-blue-500 hover:underline text-center block mt-4">Sudah Punya Akun? Login disini</a>
       </div>
     </main>
   );
