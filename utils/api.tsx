@@ -2,7 +2,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://github.com/affanlst/backend_image_encrypt.git/api';
 
 export async function loginUser(data: { email: string, password: string }) {
   try {
