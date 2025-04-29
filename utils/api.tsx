@@ -2,7 +2,8 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
+// const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
+const API_URL = 'http://localhost:8000/api';
 
 export async function loginUser(data: { email: string, password: string }) {
   try {
@@ -83,21 +84,6 @@ export async function fetchUser() {
   }
 }
 
-export async function fetchEncryptedImages() {
-  try {
-    const token = Cookies.get('token');
-    const userId = Cookies.get('user_id');
-    const res = await axios.get(`${API_URL}/user/${userId}/encrypted_images`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return res.data;
-  } catch (error) {
-    throw new Error('Fetch encrypted images gagal');
-  }
-}
-
 export function logoutUser() {
   try {
     // Hapus semua cookies yang ada
@@ -105,5 +91,19 @@ export function logoutUser() {
     Cookies.remove('user_id', { path: '/' });
   } catch (error) {
     throw new Error('Logout gagal');
+  }
+}
+
+export async function getHistory() {
+  try {
+    const token = Cookies.get('token');
+    const res = await axios.get(`${API_URL}/history`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Fetch history gagal');
   }
 }

@@ -1,22 +1,9 @@
 "use client"
-
 import * as React from "react"
 import {
-  IconCamera,
-  IconChartBar,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
+  IconMassage,
+  IconHistory
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -45,11 +32,15 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Storage",
-      url: "/dashboard/storage",
-      icon: IconListDetails,
+      title: "History",
+      url: "/dashboard/history",
+      icon: IconHistory,
     },
-
+    {
+      title: "FAQ",
+      url: "/dashboard/faq",
+      icon: IconMassage,
+    }
   ],
 }
 
@@ -64,8 +55,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Encrypt Your Image</span>
+                <img src="/picrypt_icon.png" className="w-5 h-6" alt="PiCrypt Icon" />
+                <span className="text-base font-semibold">Picrypt</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

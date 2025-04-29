@@ -1,49 +1,44 @@
+// components/nav-main.tsx
 "use client"
 
-import { Icon } from "@tabler/icons-react"
-import { usePathname } from 'next/navigation';
-
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar"
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon?: Icon
-  }[]
-}) {
+export function NavMain({ items }: { items: { title: string, url: string, icon: any }[] }) {
   const pathname = usePathname()
 
   return (
-    <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
-          {items.map((item) => {
-            const isActive = pathname === item.url
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <a
-                    href={item.url}
-                    className={isActive ? 'bg-black text-white [&>svg]:text-white' : ''}
-                  >
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <SidebarMenu>
+      {items.map((item) => {
+        const isActive = pathname === item.url
+        return (
+          <SidebarMenuItem key={item.url}>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              className={
+                isActive
+                  ? "bg-[#E7EEFF] text-[#4880FF] [&>svg]:text-[#4880FF]"
+                  : ""
+              }
+            >
+              <Link href={item.url}>
+                <item.icon className="size-4" />
+                <span className={
+                  isActive
+                  ? "text-[#4880FF]"
+                  : ""
+                }>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
+    </SidebarMenu>
   )
 }
