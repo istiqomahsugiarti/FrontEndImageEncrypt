@@ -42,7 +42,7 @@ export default function Page() {
         {faqs.map((faq, idx) => (
           <AccordionItem value={String(idx)} key={faq.question} className="border-b last:border-b-0 overflow-hidden">
             <AccordionTrigger className="group flex items-center gap-3 px-6 py-5 text-base font-semibold text-left transition-colors duration-200 rounded-xl hover:bg-primary/5 focus:bg-primary/10 focus:outline-none">
-              <span className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors duration-200 ${idx === 2 ? 'bg-primary text-white' : 'bg-muted text-primary'}`}>
+              <span className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors duration-200}`}>
                 <HelpCircle size={20} />
               </span>
               <span className="flex-1 text-lg font-medium text-primary group-hover:text-primary/90 transition-colors duration-200">{faq.question}</span>
