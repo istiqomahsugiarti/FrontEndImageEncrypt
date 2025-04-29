@@ -18,6 +18,7 @@ export default function ClientPage() {
   const [encryptFilename, setEncryptFilename] = useState('encrypted');
   const [decryptUrl, setDecryptUrl] = useState('');
   const [isEncrypting, setIsEncrypting] = useState(false);
+  const [isDecrypting, setIsDecrypting] = useState(false); // Tambahan state untuk loading decrypt
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [tempEncryptedBlob, setTempEncryptedBlob] = useState<Blob | null>(null);
   const [isDecryptDialogOpen, setIsDecryptDialogOpen] = useState(false);
@@ -78,6 +79,7 @@ export default function ClientPage() {
     formData.append('file', decryptFile);
     formData.append('key', decryptKey);
 
+    setIsDecrypting(true); // Set loading decrypt ke true
     try {
       const result = await decryptImage(formData);
       setTempDecryptedBlob(result);
@@ -85,8 +87,27 @@ export default function ClientPage() {
       setDecryptUrl(url);
       setIsDecryptDialogOpen(true);
       toast.success('Dekripsi berhasil!');
-    } catch {
-      toast.error('Key salah atau file tidak valid.');
+    } catch (error: any) {
+      // Tangkap pesan error dari hasil fetch dan tampilkan di toast
+      // Cek jika error.message adalah string JSON, parse dan ambil pesan error-nya
+      let errorMessage = 'Key salah atau file tidak valid.';
+      if (error?.message) {
+        try {
+          // Coba parse jika error.message adalah JSON
+          const parsed = JSON.parse(error.message);
+          if (parsed && parsed.error) {
+            errorMessage = parsed.error;
+          } else {
+            errorMessage = error.message;
+          }
+        } catch {
+          // Jika bukan JSON, tampilkan langsung
+          errorMessage = error.message;
+        }
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsDecrypting(false); // Set loading decrypt ke false setelah selesai
     }
   };
 
@@ -240,9 +261,9 @@ export default function ClientPage() {
               <Button
                 type="submit"
                 className="w-full bg-green-600 hover:bg-green-700"
-                disabled={!decryptFile || decryptKey.length < 8}
+                disabled={isDecrypting || !decryptFile || decryptKey.length < 8}
               >
-                Decrypt
+                {isDecrypting ? <Loader2 className="animate-spin w-5 h-5 mx-auto" /> : 'Decrypt'}
               </Button>
             </form>
           </div>

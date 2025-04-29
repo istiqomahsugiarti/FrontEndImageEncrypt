@@ -2,8 +2,8 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
+// const API_URL = 'http://localhost:8000/api';
 
 export async function loginUser(data: { email: string, password: string }) {
   try {
