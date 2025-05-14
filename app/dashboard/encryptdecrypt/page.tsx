@@ -1,57 +1,95 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { encryptImage, decryptImage } from '@/utils/api';
+import { useState, useCallback, useEffect } from 'react';
+import { encryptImage, decryptImage, getUserStatus } from '@/utils/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, FileImage, X , CircleCheck, Circle} from 'lucide-react';
+import { Loader2, FileImage, X, CircleCheck, Circle, ShieldAlert, Clock, AlertTriangle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import clsx from 'clsx';
 
 export default function ClientPage() {
+  // State untuk file dan kunci enkripsi
   const [encryptFile, setEncryptFile] = useState<File | null>(null);
-  const [decryptFile, setDecryptFile] = useState<File | null>(null);
   const [encryptKey, setEncryptKey] = useState('');
-  const [decryptKey, setDecryptKey] = useState('');
   const [encryptFilename, setEncryptFilename] = useState('encrypted');
-  const [decryptUrl, setDecryptUrl] = useState('');
   const [isEncrypting, setIsEncrypting] = useState(false);
-  const [isDecrypting, setIsDecrypting] = useState(false); // Tambahan state untuk loading decrypt
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [tempEncryptedBlob, setTempEncryptedBlob] = useState<Blob | null>(null);
-  const [isDecryptDialogOpen, setIsDecryptDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // State untuk file dan kunci dekripsi
+  const [decryptFile, setDecryptFile] = useState<File | null>(null);
+  const [decryptKey, setDecryptKey] = useState('');
+  const [decryptUrl, setDecryptUrl] = useState('');
+  const [isDecrypting, setIsDecrypting] = useState(false);
   const [tempDecryptedBlob, setTempDecryptedBlob] = useState<Blob | null>(null);
+  const [isDecryptDialogOpen, setIsDecryptDialogOpen] = useState(false);
+  
+  // State untuk mode aplikasi
   const [mode, setMode] = useState<'basic' | 'advance'>('basic');
 
+  // State untuk pengelolaan blokir pengguna
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockUntil, setBlockUntil] = useState<Date | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState('00:00');
+  const [isBlockedDialogOpen, setIsBlockedDialogOpen] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState('');
+
+  // Fungsi untuk memformat waktu blokir yang tersisa
+  const formatTimeRemaining = (until: Date) => {
+    const now = new Date();
+    const diff = until.getTime() - now.getTime();
+    if (diff <= 0) return '00:00';
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Callback untuk menangani drop file enkripsi
   const onEncryptDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) setEncryptFile(acceptedFiles[0]);
   }, []);
 
+  // Setup dropzone untuk file enkripsi
   const {
     getRootProps: getEncryptRootProps,
     getInputProps: getEncryptInputProps,
     isDragActive: isEncryptDragActive,
-  } = useDropzone({ onDrop: onEncryptDrop, accept: { 'image/*': [] }, maxFiles: 1 });
+  } = useDropzone({ 
+    onDrop: onEncryptDrop, 
+    accept: { 'image/*': [] }, 
+    maxFiles: 1 
+  });
 
+  // Callback untuk menangani drop file dekripsi
   const onDecryptDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) setDecryptFile(acceptedFiles[0]);
   }, []);
 
+  // Setup dropzone untuk file dekripsi
   const {
     getRootProps: getDecryptRootProps,
     getInputProps: getDecryptInputProps,
     isDragActive: isDecryptDragActive,
-  } = useDropzone({ onDrop: onDecryptDrop, accept: { '*/*': [] }, maxFiles: 1 });
+  } = useDropzone({ 
+    onDrop: onDecryptDrop, 
+    accept: { '*/*': [] }, 
+    maxFiles: 1 
+  });
 
+  // Fungsi untuk menangani proses enkripsi
   const handleEncrypt = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validasi file dan kekuatan kunci
     if (!encryptFile || getKeyStrength(encryptKey).score < 3) {
       toast.error('Key harus minimal 8 karakter, ada huruf besar, angka, dan simbol!');
       return;
     }
 
+    // Persiapkan data untuk dikirim ke API
     const formData = new FormData();
     formData.append('file', encryptFile);
     formData.append('key', encryptKey);
@@ -59,6 +97,7 @@ export default function ClientPage() {
 
     setIsEncrypting(true);
     try {
+      // Kirim permintaan enkripsi ke server
       const result = await encryptImage(formData);
       setTempEncryptedBlob(result);
       setIsDialogOpen(true);
@@ -68,19 +107,24 @@ export default function ClientPage() {
     }
   };
 
+  // Fungsi untuk menangani proses dekripsi
   const handleDecrypt = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validasi file dan kunci
     if (!decryptFile || decryptKey.length < 8) {
       toast.error('Key minimal 8 karakter!');
       return;
     }
-
+  
+    // Persiapkan data untuk dikirim ke API
     const formData = new FormData();
     formData.append('file', decryptFile);
     formData.append('key', decryptKey);
-
-    setIsDecrypting(true); // Set loading decrypt ke true
+  
+    setIsDecrypting(true);
     try {
+      // Kirim permintaan dekripsi ke server
       const result = await decryptImage(formData);
       setTempDecryptedBlob(result);
       const url = URL.createObjectURL(result);
@@ -88,29 +132,39 @@ export default function ClientPage() {
       setIsDecryptDialogOpen(true);
       toast.success('Dekripsi berhasil!');
     } catch (error: any) {
-      // Tangkap pesan error dari hasil fetch dan tampilkan di toast
-      // Cek jika error.message adalah string JSON, parse dan ambil pesan error-nya
       let errorMessage = 'Key salah atau file tidak valid.';
-      if (error?.message) {
+  
+      // Penanganan error khusus untuk respons blob
+      if (error?.response?.data instanceof Blob) {
         try {
-          // Coba parse jika error.message adalah JSON
-          const parsed = JSON.parse(error.message);
-          if (parsed && parsed.error) {
-            errorMessage = parsed.error;
-          } else {
-            errorMessage = error.message;
+          const text = await error.response.data.text(); // Ubah blob jadi string
+          const parsed = JSON.parse(text); // Parse ke JSON
+  
+          // Penanganan jika akun diblokir
+          if (parsed.block_until) {
+            const blockUntilDate = new Date(parsed.block_until);
+            setIsBlocked(true);
+            setBlockUntil(blockUntilDate);
+            setBlockedMessage(parsed.error || 'Akun Anda diblokir sementara. Coba lagi nanti.');
+            setIsBlockedDialogOpen(true);
+            return;
           }
+  
+          errorMessage = parsed.error || errorMessage;
         } catch {
-          // Jika bukan JSON, tampilkan langsung
-          errorMessage = error.message;
+          errorMessage = 'Terjadi kesalahan saat membaca pesan error.';
         }
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
+  
       toast.error(errorMessage);
     } finally {
-      setIsDecrypting(false); // Set loading decrypt ke false setelah selesai
+      setIsDecrypting(false);
     }
   };
-
+  
+  // Fungsi untuk menghitung kekuatan kunci
   const getKeyStrength = (key: string) => {
     let score = 0;
     if (key.length >= 8) score++;
@@ -126,7 +180,7 @@ export default function ClientPage() {
     return { score, color };
   };
 
-  // Fungsi untuk mendapatkan label kekuatan key
+  // Fungsi untuk mendapatkan label kekuatan kunci
   const getKeyStrengthLabel = (score: number) => {
     if (score <= 1) return { label: 'Lemah', color: 'text-red-500' };
     if (score === 2) return { label: 'Lumayan', color: 'text-orange-400' };
@@ -135,13 +189,58 @@ export default function ClientPage() {
     return { label: '', color: '' };
   };
 
+  // Hitung kekuatan kunci saat ini
   const keyStrength = getKeyStrength(encryptKey);
   const keyStrengthLabel = getKeyStrengthLabel(keyStrength.score);
 
+  // Effect untuk memeriksa status pengguna saat komponen dimuat
+  useEffect(() => {
+    async function checkUserStatus() {
+      try {
+        const status = await getUserStatus();
+        if (status.status === 'blocked') {
+          setIsBlocked(true);
+          const blockUntilDate = new Date(status.block_until);
+          setBlockUntil(blockUntilDate);
+          setBlockedMessage('Akun Anda diblokir sementara. Silakan coba lagi nanti.');
+        }
+      } catch (e) {
+        // Penanganan error opsional
+      }
+    }
+    checkUserStatus();
+  }, []);
+
+  // Effect untuk menghitung mundur waktu blokir
+  useEffect(() => {
+    if (!isBlocked || !blockUntil) return;
+
+    // Fungsi untuk memperbarui timer
+    const updateTimer = () => {
+      const remaining = formatTimeRemaining(blockUntil);
+      setTimeRemaining(remaining);
+      
+      // Reset status blokir jika waktu sudah habis
+      if (remaining === '00:00') {
+        setIsBlocked(false);
+        setBlockUntil(null);
+      }
+    };
+
+    // Panggil sekali di awal untuk menghindari delay
+    updateTimer();
+    
+    // Set interval untuk update setiap detik
+    const interval = setInterval(updateTimer, 1000);
+    
+    // Cleanup interval saat komponen unmount
+    return () => clearInterval(interval);
+  }, [isBlocked, blockUntil]);
+
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4">
-      
       <div className="max-w-5xl mx-auto">
+        {/* Tombol pemilihan mode */}
         <div className="flex justify-center gap-2 mb-6">
           <Button 
             variant={mode === 'basic' ? 'default' : 'outline'}
@@ -162,10 +261,11 @@ export default function ClientPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Encrypt */}
+          {/* Panel Enkripsi */}
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <h2 className="text-xl font-semibold text-blue-600 mb-4">🔒 Encrypt File</h2>
             <form onSubmit={handleEncrypt} className="space-y-4">
+              {/* Area drop file enkripsi */}
               <div
                 {...getEncryptRootProps()}
                 className={clsx(
@@ -176,23 +276,27 @@ export default function ClientPage() {
                 <input {...getEncryptInputProps()} />
                 <p className="text-gray-500">Drag and drop gambar di sini, atau klik untuk upload</p>
               </div>
+              
+              {/* Preview gambar yang akan dienkripsi */}
               {encryptFile && (
-              <div className="relative mt-4">
-                <img
-                  src={URL.createObjectURL(encryptFile)}
-                  alt="Encrypt Preview"
-                  className="w-full h-48 object-contain rounded-lg"
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setEncryptFile(null)}
-                  className="absolute top-0 right-0"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+                <div className="relative mt-4">
+                  <img
+                    src={URL.createObjectURL(encryptFile)}
+                    alt="Encrypt Preview"
+                    className="w-full h-48 object-contain rounded-lg"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setEncryptFile(null)}
+                    className="absolute top-0 right-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* Input kunci enkripsi dengan indikator kekuatan */}
               <div className="space-y-1">
                 <Input
                   type="text"
@@ -201,14 +305,14 @@ export default function ClientPage() {
                   onChange={(e) => setEncryptKey(e.target.value)}
                   required
                 />
-                {/* Bar kecil untuk kekuatan key */}
+                {/* Bar indikator kekuatan kunci */}
                 <div className="w-full h-2 rounded-full bg-gray-200 mt-1">
                   <div
                     className={`h-2 rounded-full transition-all ${keyStrength.color}`}
                     style={{ width: `${(keyStrength.score / 4) * 100}%` }}
                   />
                 </div>
-                {/* Teks indikator kekuatan key */}
+                {/* Label kekuatan kunci */}
                 {encryptKey && (
                   <div className={`text-xs font-semibold mt-1 ${keyStrengthLabel.color}`}>
                     Kekuatan kunci: {keyStrengthLabel.label}
@@ -216,6 +320,7 @@ export default function ClientPage() {
                 )}
               </div>
 
+              {/* Tombol enkripsi */}
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700"
@@ -226,10 +331,11 @@ export default function ClientPage() {
             </form>
           </div>
 
-          {/* Decrypt */}
+          {/* Panel Dekripsi */}
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <h2 className="text-xl font-semibold text-green-600 mb-4">🔓 Decrypt File</h2>
             <form onSubmit={handleDecrypt} className="space-y-4">
+              {/* Area drop file dekripsi */}
               <div
                 {...getDecryptRootProps()}
                 className={clsx(
@@ -241,6 +347,7 @@ export default function ClientPage() {
                 <p className="text-gray-500">Drag and drop file enkripsi di sini, atau klik untuk upload</p>
               </div>
 
+              {/* Informasi file yang akan didekripsi */}
               {decryptFile && (
                 <div className="flex items-center gap-3 mt-2 text-sm text-gray-700">
                   <FileImage className="w-5 h-5 text-green-600" />
@@ -251,6 +358,7 @@ export default function ClientPage() {
                 </div>
               )}
 
+              {/* Input kunci dekripsi */}
               <Input
                 type="text"
                 placeholder="Masukkan kunci"
@@ -258,19 +366,34 @@ export default function ClientPage() {
                 onChange={(e) => setDecryptKey(e.target.value)}
                 required
               />
+              
+              {/* Tombol dekripsi */}
               <Button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700"
-                disabled={isDecrypting || !decryptFile || decryptKey.length < 8}
+                className={`w-full ${isBlocked ? 'bg-red-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                disabled={isDecrypting || !decryptFile || decryptKey.length < 8 || isBlocked}
               >
-                {isDecrypting ? <Loader2 className="animate-spin w-5 h-5 mx-auto" /> : 'Decrypt'}
+                {isDecrypting ? (
+                  <Loader2 className="animate-spin w-5 h-5 mx-auto" />
+                ) : isBlocked ? (
+                  'Blocked'
+                ) : (
+                  'Decrypt'
+                )}
               </Button>
+              
+              {/* Informasi blokir jika pengguna diblokir */}
+              {isBlocked && blockUntil && (
+                <div className="text-red-500 text-sm text-center">
+                  ⚠️ Terlalu banyak percobaan gagal. Tersisa: {timeRemaining}
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
 
-      {/* Encrypt Dialog */}
+      {/* Dialog hasil enkripsi */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
         if (!open) setIsEncrypting(false);
@@ -317,7 +440,7 @@ export default function ClientPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Decrypt Dialog */}
+      {/* Dialog hasil dekripsi */}
       <Dialog open={isDecryptDialogOpen} onOpenChange={setIsDecryptDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -352,6 +475,45 @@ export default function ClientPage() {
               className="bg-green-600 hover:bg-green-700"
             >
               Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog informasi blokir */}
+      <Dialog open={isBlockedDialogOpen} onOpenChange={setIsBlockedDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white rounded-xl shadow-xl border-0">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+              <ShieldAlert className="h-6 w-6" />
+              <span>Anda Diblokir Sementara</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Demi keamanan akun Anda, kami telah membatasi akses untuk sementara waktu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-red-50 p-4 rounded-lg my-2">
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                <Clock className="h-10 w-10 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-red-700 mb-1">Terlalu Banyak Percobaan</h3>
+              <p className="text-center text-red-600 text-sm mb-2">
+                {blockedMessage}
+              </p>
+              <div className="bg-white px-6 py-3 rounded-lg shadow-sm border border-red-200 w-full text-center">
+                <p className="text-sm text-slate-600 mb-1">Akun akan dibuka kembali dalam:</p>
+                <p className="text-2xl font-bold text-red-600">{timeRemaining}</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-center">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsBlockedDialogOpen(false)}
+              className="border-slate-300 hover:bg-slate-100 w-full"
+            >
+              Tutup
             </Button>
           </DialogFooter>
         </DialogContent>
