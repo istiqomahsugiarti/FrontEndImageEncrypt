@@ -1,11 +1,11 @@
 "use client"
 import * as React from "react"
 import {
-  IconDashboard,
-  IconMassage,
-  IconHistory
-} from "@tabler/icons-react"
-
+  LayoutDashboardIcon,
+  HistoryIcon,
+  User2Icon,
+  MessageCircleQuestionIcon
+} from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 
 import { NavUser } from "@/components/nav-user"
@@ -19,32 +19,26 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Encrypt",
-      url: "/dashboard/encryptdecrypt",
-      icon: IconDashboard,
-    },
-    {
-      title: "History",
-      url: "/dashboard/history",
-      icon: IconHistory,
-    },
-    {
-      title: "FAQ",
-      url: "/dashboard/faq",
-      icon: IconMassage,
-    }
-  ],
-}
-
+import { useUser } from "@/context/UserContext"
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, loading } = useUser();
+
+  if (loading) return null; // atau loading spinner
+
+  // Menu untuk user
+  const userNav = [
+    { title: "Encrypt", url: "/dashboard/encryptdecrypt", icon: LayoutDashboardIcon },
+    { title: "History", url: "/dashboard/history", icon: HistoryIcon},
+    { title: "FAQ", url: "/dashboard/faq", icon:  MessageCircleQuestionIcon },
+  ];
+
+  // Menu untuk admin
+  const adminNav = [
+    { title: "Dashboard", url: "/dashboard/admin", icon: LayoutDashboardIcon },
+    { title: "User Management", url: "/dashboard/users", icon: User2Icon },
+    { title: "FAQ Management", url: "/dashboard/faqManagement", icon: MessageCircleQuestionIcon },
+  ];
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -63,7 +57,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={user?.role === "admin" ? adminNav : userNav} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

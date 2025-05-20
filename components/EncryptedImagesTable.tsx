@@ -14,6 +14,7 @@ import { getHistory } from '../utils/api';
 import { Button } from './ui/button';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { Skeleton } from './ui/skeleton';
 
 interface EncryptedImage {
   id: string;
@@ -27,15 +28,19 @@ interface EncryptedImage {
 const EncryptedImagesTable = () => {
   const [images, setImages] = useState<EncryptedImage[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const data: EncryptedImage[] = await getHistory();
         const numberedData = data.map((item, index) => ({ ...item, nomor: index + 1 }));
         setImages(numberedData);
       } catch (error) {
         console.error('Error fetching history:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -139,8 +144,24 @@ const EncryptedImagesTable = () => {
     XLSX.writeFile(workbook, 'encrypted_images.xlsx');
   };
 
+  function TableSkeleton() {
+    return (
+      <TableBody>
+        {[1,2,3,4,5].map((i) => (
+          <TableRow key={i}>
+            <TableCell><Skeleton className="w-8 h-4 mx-auto" /></TableCell>
+            <TableCell><Skeleton className="w-40 h-4" /></TableCell>
+            <TableCell><Skeleton className="w-24 h-4" /></TableCell>
+            <TableCell><Skeleton className="w-40 h-4" /></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    );
+  }
+
   return (
-    <div className="w-full px-2 py-6">
+    <div className="w-full px-2">
+      <div className="font-bold text-2xl mb-6 tracking-tight text-primary drop-shadow-sm text-center">HISTORY</div>
       <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow bg-white">
         <Table className="min-w-[700px] text-[15px]">
           <TableHeader className="bg-slate-50 border-b border-slate-200">
@@ -162,44 +183,48 @@ const EncryptedImagesTable = () => {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row, index) => (
-                <TableRow
-                  key={row.id}
-                  className={
-                    `transition-all duration-150
-                    ${index % 2 === 0
-                      ? 'bg-white'
-                      : 'bg-slate-50 hover:bg-slate-100'
+          {loading ? (
+            <TableSkeleton />
+          ) : (
+            <TableBody>
+              {table.getRowModel().rows.length > 0 ? (
+                table.getRowModel().rows.map((row, index) => (
+                  <TableRow
+                    key={row.id}
+                    className={
+                      `transition-all duration-150
+                      ${index % 2 === 0
+                        ? 'bg-white'
+                        : 'bg-slate-50 hover:bg-slate-100'
+                      }
+                      hover:shadow-sm hover:scale-[1.01]`
                     }
-                    hover:shadow-sm hover:scale-[1.01]`
-                  }
-                  style={{ borderBottom: '1px solid #e5e7eb' }}
-                >
-                  {row.getVisibleCells().map((cell, idx) => (
-                    <TableCell
-                      key={cell.id}
-                      style={{
-                        width: columns[idx]?.size ? `${columns[idx].size}px` : undefined,
-                        minWidth: columns[idx]?.size ? `${columns[idx].size}px` : undefined,
-                        maxWidth: columns[idx]?.size ? `${columns[idx].size + 40}px` : undefined,
-                      }}
-                      className="px-4 py-3 text-slate-800 text-left align-middle"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                    style={{ borderBottom: '1px solid #e5e7eb' }}
+                  >
+                    {row.getVisibleCells().map((cell, idx) => (
+                      <TableCell
+                        key={cell.id}
+                        style={{
+                          width: columns[idx]?.size ? `${columns[idx].size}px` : undefined,
+                          minWidth: columns[idx]?.size ? `${columns[idx].size}px` : undefined,
+                          maxWidth: columns[idx]?.size ? `${columns[idx].size + 40}px` : undefined,
+                        }}
+                        className="px-4 py-3 text-slate-800 text-left align-middle"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="text-center py-8 text-slate-400 font-semibold">
+                    Tidak ada data
+                  </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-slate-400 font-semibold">
-                  Tidak ada data
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
+              )}
+            </TableBody>
+          )}
         </Table>
       </div>
 

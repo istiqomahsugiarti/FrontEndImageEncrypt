@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   let decoded: JwtPayload | null = null
-  let isExpired = false
+  let isExpired = false 
 
   if (token) {
     try {
@@ -45,15 +45,25 @@ export function middleware(request: NextRequest) {
   const isAuthPage = ['/login', '/register'].includes(pathname)
   const isDashboardRoot = pathname === '/dashboard'
   const isEncryptPage = pathname === '/dashboard/encryptdecrypt'
+  const isAdmin = pathname === '/dashboard/admin'
 
   // === Jika belum login dan akses dashboard → redirect login
-  if (!decoded && (isDashboardRoot || isEncryptPage)) {
+  if (!decoded && (isDashboardRoot || isAdmin ||isEncryptPage)) {
     return redirectToLogin()
   }
 
-  // === Jika sudah login dan akses login/register/dashboard root → redirect ke encryptdecrypt
+  // === Jika sudah login dan akses login/register/dashboard root → redirect ke encryptdecrypt/admin
   if (decoded && (isAuthPage || isDashboardRoot || pathname === '/')) {
-    return NextResponse.redirect(new URL('/dashboard/encryptdecrypt', request.url))
+    if (decoded.role === 'admin') {
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url))
+    } else {
+      return NextResponse.redirect(new URL('/dashboard/encryptdecrypt', request.url))
+    }
+  }
+
+  // === Jika admin akses /dashboard/encryptdecrypt, redirect ke /dashboard/admin
+  if (decoded && pathname === '/dashboard/encryptdecrypt' && decoded.role === 'admin') {
+    return NextResponse.redirect(new URL('/dashboard/admin', request.url))
   }
 
   // === Semua aman, lanjutkan
@@ -61,5 +71,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/register', '/dashboard', '/dashboard/encryptdecrypt'],
+  matcher: ['/', '/login', '/register', '/dashboard', '/dashboard/encryptdecrypt', '/dashboard/admin'],
 }

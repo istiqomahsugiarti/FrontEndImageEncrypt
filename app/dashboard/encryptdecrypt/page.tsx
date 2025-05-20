@@ -238,7 +238,8 @@ export default function ClientPage() {
   }, [isBlocked, blockUntil]);
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4">
+    <main className="min-h-screen bg-gray-50 px-4">
+      <div className="font-bold text-2xl mb-6 tracking-tight text-primary drop-shadow-sm text-center">ENCRYPT & DECRYPT</div>
       <div className="max-w-5xl mx-auto">
         {/* Tombol pemilihan mode */}
         <div className="flex justify-center gap-2 mb-6">
