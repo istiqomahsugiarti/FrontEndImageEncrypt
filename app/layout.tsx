@@ -4,6 +4,9 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Picrypt",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

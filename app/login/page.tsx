@@ -152,10 +152,15 @@ export default function LoginPage() {
               {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+          <div className="text-right">
+            <a href="/forgotPassword" className="text-sm text-[#4880FF] hover:underline transition">
+              Lupa Password?
+            </a>
+          </div>
           <Button
             type="submit"
             className="w-full bg-[#4880FF] hover:bg-[#3566d6] text-white font-semibold shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled={loading || isBlocked}
+            disabled={loading || isBlocked || !email || !password}
           >
             {loading ? (
               <span>

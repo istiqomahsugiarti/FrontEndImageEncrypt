@@ -241,20 +241,20 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16 text-center">ID</TableHead>
-                <TableHead className="text-center">Username</TableHead>
-                <TableHead className="text-center">Email</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
+                <TableHead className="w-16">ID</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedUsers.map(user => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium text-center">{user.id}</TableCell>
-                  <TableCell className="text-center">{user.username}</TableCell>
-                  <TableCell className="text-center">{user.email}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
+                  <TableCell className="font-medium">{user.id}</TableCell>
+                  <TableCell>{user.username}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
                           setViewUser(user)

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, FileImage, X, CircleCheck, Circle, ShieldAlert, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, FileImage, X, CircleCheck, Circle, ShieldAlert, Clock, AlertTriangle, Lock, Unlock, KeyRound } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import clsx from 'clsx';
 
@@ -97,8 +97,8 @@ export default function ClientPage() {
 
     setIsEncrypting(true);
     try {
-      // Kirim permintaan enkripsi ke server
-      const result = await encryptImage(formData);
+      // Kirim permintaan enkripsi ke server dengan mode yang dipilih
+      const result = await encryptImage(formData, mode === 'advance' ? 'advanced' : 'basic');
       setTempEncryptedBlob(result);
       setIsDialogOpen(true);
     } catch {
@@ -124,8 +124,8 @@ export default function ClientPage() {
   
     setIsDecrypting(true);
     try {
-      // Kirim permintaan dekripsi ke server
-      const result = await decryptImage(formData);
+      // Kirim permintaan dekripsi ke server dengan mode yang dipilih
+      const result = await decryptImage(formData, mode === 'advance' ? 'advanced' : 'basic');
       setTempDecryptedBlob(result);
       const url = URL.createObjectURL(result);
       setDecryptUrl(url);
@@ -166,27 +166,40 @@ export default function ClientPage() {
   
   // Fungsi untuk menghitung kekuatan kunci
   const getKeyStrength = (key: string) => {
-    let score = 0;
-    if (key.length >= 8) score++;
-    if (/[A-Z]/.test(key)) score++;
-    if (/[0-9]/.test(key)) score++;
-    if (/[^A-Za-z0-9]/.test(key)) score++;
+    const checks = {
+      length: key.length >= 8,
+      uppercase: /[A-Z]/.test(key),
+      number: /[0-9]/.test(key),
+      symbol: /[^A-Za-z0-9]/.test(key)
+    };
 
+    const score = Object.values(checks).filter(Boolean).length;
+    
     let color = 'bg-red-500';
     if (score === 2) color = 'bg-orange-400';
     else if (score === 3) color = 'bg-yellow-500';
     else if (score === 4) color = 'bg-green-500';
 
-    return { score, color };
+    return { score, color, checks };
   };
 
   // Fungsi untuk mendapatkan label kekuatan kunci
   const getKeyStrengthLabel = (score: number) => {
-    if (score <= 1) return { label: 'Lemah', color: 'text-red-500' };
-    if (score === 2) return { label: 'Lumayan', color: 'text-orange-400' };
-    if (score === 3) return { label: 'Cukup Kuat', color: 'text-yellow-500' };
+    if (score <= 1) return { label: 'Sangat Lemah', color: 'text-red-500' };
+    if (score === 2) return { label: 'Lemah', color: 'text-orange-400' };
+    if (score === 3) return { label: 'Kurang Kuat', color: 'text-yellow-500' };
     if (score === 4) return { label: 'Kuat', color: 'text-green-600' };
     return { label: '', color: '' };
+  };
+
+  // Fungsi untuk mendapatkan pesan kekurangan key
+  const getKeyRequirements = (checks: { length: boolean; uppercase: boolean; number: boolean; symbol: boolean }) => {
+    const requirements = [];
+    if (!checks.length) requirements.push('minimal 8 karakter');
+    if (!checks.uppercase) requirements.push('huruf besar');
+    if (!checks.number) requirements.push('angka');
+    if (!checks.symbol) requirements.push('simbol');
+    return requirements;
   };
 
   // Hitung kekuatan kunci saat ini
@@ -238,17 +251,17 @@ export default function ClientPage() {
   }, [isBlocked, blockUntil]);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4">
+    <main className="min-h-screen px-4">
       <div className="font-bold text-2xl mb-6 tracking-tight text-primary drop-shadow-sm text-center">ENCRYPT & DECRYPT</div>
       <div className="max-w-5xl mx-auto">
         {/* Tombol pemilihan mode */}
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex justify-center gap-2 mb-8">
           <Button 
             variant={mode === 'basic' ? 'default' : 'outline'}
             onClick={() => setMode('basic')}
             className={mode === 'basic' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
-            {mode === 'basic' ? <CircleCheck className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+            {mode === 'basic' ? <CircleCheck className="w-4 h-4 mr-2" /> : <Circle className="w-4 h-4 mr-2" />}
             Basic
           </Button>
           <Button
@@ -256,15 +269,20 @@ export default function ClientPage() {
             onClick={() => setMode('advance')}
             className={mode === 'advance' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
-            {mode === 'advance' ? <CircleCheck className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+            {mode === 'advance' ? <CircleCheck className="w-4 h-4 mr-2" /> : <Circle className="w-4 h-4 mr-2" />}
             Advance
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Panel Enkripsi */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
-            <h2 className="text-xl font-semibold text-blue-600 mb-4">🔒 Encrypt File</h2>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Lock className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Encrypt File</h2>
+            </div>
             <form onSubmit={handleEncrypt} className="space-y-4">
               {/* Area drop file enkripsi */}
               <div
@@ -299,13 +317,17 @@ export default function ClientPage() {
               
               {/* Input kunci enkripsi dengan indikator kekuatan */}
               <div className="space-y-1">
-                <Input
-                  type="text"
-                  placeholder="Masukkan kunci (min 8 karakter, huruf besar, angka, simbol)"
-                  value={encryptKey}
-                  onChange={(e) => setEncryptKey(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <Input
+                    type="text"
+                    placeholder="Masukkan kunci (min 8 karakter, huruf besar, angka, simbol)"
+                    value={encryptKey}
+                    onChange={(e) => setEncryptKey(e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
                 {/* Bar indikator kekuatan kunci */}
                 <div className="w-full h-2 rounded-full bg-gray-200 mt-1">
                   <div
@@ -313,10 +335,17 @@ export default function ClientPage() {
                     style={{ width: `${(keyStrength.score / 4) * 100}%` }}
                   />
                 </div>
-                {/* Label kekuatan kunci */}
+                {/* Label kekuatan kunci dan detail requirements */}
                 {encryptKey && (
-                  <div className={`text-xs font-semibold mt-1 ${keyStrengthLabel.color}`}>
-                    Kekuatan kunci: {keyStrengthLabel.label}
+                  <div className="space-y-1">
+                    <div className={`text-xs font-semibold ${keyStrengthLabel.color}`}>
+                      Kekuatan kunci: {keyStrengthLabel.label}
+                    </div>
+                    {keyStrength.score < 4 && (
+                      <div className="text-xs text-gray-600">
+                        Kurang: {getKeyRequirements(keyStrength.checks).join(', ')}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -333,8 +362,13 @@ export default function ClientPage() {
           </div>
 
           {/* Panel Dekripsi */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
-            <h2 className="text-xl font-semibold text-green-600 mb-4">🔓 Decrypt File</h2>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Unlock className="w-5 h-5 text-green-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Decrypt File</h2>
+            </div>
             <form onSubmit={handleDecrypt} className="space-y-4">
               {/* Area drop file dekripsi */}
               <div
@@ -360,13 +394,17 @@ export default function ClientPage() {
               )}
 
               {/* Input kunci dekripsi */}
-              <Input
-                type="text"
-                placeholder="Masukkan kunci"
-                value={decryptKey}
-                onChange={(e) => setDecryptKey(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <KeyRound className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Masukkan kunci"
+                  value={decryptKey}
+                  onChange={(e) => setDecryptKey(e.target.value)}
+                  required
+                  className="pl-10"
+                />
+              </div>
               
               {/* Tombol dekripsi */}
               <Button

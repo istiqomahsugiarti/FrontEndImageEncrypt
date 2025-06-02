@@ -2,8 +2,8 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 // Ganti ke URL production jika perlu
-// const API_URL = 'http://localhost:8000/api';
-const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
+const API_URL = 'http://localhost:8000/api';
+// const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
 
 // Helper untuk ambil token
 const getToken = () => Cookies.get('token');
@@ -43,8 +43,9 @@ export async function registerUser(data: { username: string; email: string; pass
 }
 
 // ENKRIPSI/DEKRIPSI
-export async function encryptImage(formData: FormData): Promise<Blob> {
+export async function encryptImage(formData: FormData, method: 'basic' | 'advanced' = 'basic'): Promise<Blob> {
   try {
+    formData.append('method', method);
     const res = await axios.post(`${API_URL}/encrypt`, formData, {
       headers: { ...authHeader(), 'Content-Type': 'multipart/form-data' },
       responseType: 'blob',
@@ -55,8 +56,9 @@ export async function encryptImage(formData: FormData): Promise<Blob> {
   }
 }
 
-export async function decryptImage(formData: FormData): Promise<Blob> {
+export async function decryptImage(formData: FormData, method: 'basic' | 'advanced' = 'basic'): Promise<Blob> {
   try {
+    formData.append('method', method);
     const res = await axios.post(`${API_URL}/decrypt`, formData, {
       headers: authHeader(),
       responseType: 'blob',
@@ -147,6 +149,25 @@ export async function fetchAllUsers() {
   }
 }
 
+// DASHBOARD ADMIN
+export async function getDashboardData(): Promise<{
+  total_login_failed: number;
+  total_decrypt_failed: number;
+  users: Array<{
+    username: string;
+    email: string;
+    created_at: string;
+  }>;
+  total_users: number;
+  total_history: number;
+}> {
+  try {
+    return await getWithAuth(`${API_URL}/users/dashboard`);
+  } catch (e: any) {
+    throw new Error(e.response?.data?.error || 'Fetch dashboard data gagal');
+  }
+}
+
 // FAQ
 export async function getAllFaq() {
   try {
@@ -178,5 +199,26 @@ export async function deleteFaq(faqId: number) {
     return await deleteWithAuth(`${API_URL}/faq/${faqId}`);
   } catch (e: any) {
     throw new Error(e.response?.data?.error || 'Hapus FAQ gagal');
+  }
+}
+
+// OTP
+export async function sendOtp(data: { email: string }) {
+  try {
+    const res = await axios.post(`${API_URL}/send-otp`, data);
+    return res.data;
+  } catch (e: any) {
+    // Bisa ambil e.response.data.message atau e.response.data.error
+    throw new Error(e.response?.data?.error || 'Gagal mengirim OTP');
+  }
+}
+
+// VERIFY OTP
+export async function verifyOtp(data: { email: string; otp: string; new_password: string }) {
+  try {
+    const res = await axios.post(`${API_URL}/verify-otp`, data);
+    return res.data;
+  } catch (e: any) {
+    throw new Error(e.response?.data?.error || 'Gagal verifikasi OTP');
   }
 }

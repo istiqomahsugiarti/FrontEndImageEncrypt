@@ -1,21 +1,26 @@
-'use client'
+// pages/verify-otp.tsx
+'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { registerUser } from '@/utils/api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { verifyOtp } from '@/utils/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, EyeOff, UserPlus, CheckCircle2, XCircle } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, CheckCircle2, XCircle } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 
-export default function RegisterPage() {
+export default function VerifyOtpPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [username, setName] = useState('');
-  const [password, setPassword] = useState('');
+  const params = useSearchParams();
+  const emailFromQuery = params.get('email') || '';
+
+  const [email, setEmail] = useState(emailFromQuery);
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Password validation states
@@ -28,28 +33,49 @@ export default function RegisterPage() {
 
   // Validate password on change
   useEffect(() => {
-    setHasMinLength(password.length >= 8);
-    setHasUpperCase(/[A-Z]/.test(password));
-    setHasLowerCase(/[a-z]/.test(password));
-    setHasNumber(/[0-9]/.test(password));
-    setHasSpecialChar(/[!@#$%^&*(),.?":{}|<>]/.test(password));
-    setPasswordsMatch(password === confirmPassword && password !== '');
-  }, [password, confirmPassword]);
+    setHasMinLength(newPassword.length >= 8);
+    setHasUpperCase(/[A-Z]/.test(newPassword));
+    setHasLowerCase(/[a-z]/.test(newPassword));
+    setHasNumber(/[0-9]/.test(newPassword));
+    setHasSpecialChar(/[!@#$%^&*(),.?":{}|<>]/.test(newPassword));
+    setPasswordsMatch(newPassword === confirmPassword && newPassword !== '');
+  }, [newPassword, confirmPassword]);
 
   const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
-  const isFormValid = email && username && isPasswordValid && passwordsMatch;
+  const isFormValid = isPasswordValid && passwordsMatch;
 
-  const handleRegister = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+    }
+  }, [emailFromQuery]);
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid) return;
-    
     setLoading(true);
+
+    if (otp.length < 6) {
+      toast.error('Kode OTP harus 6 digit');
+      setLoading(false);
+      return;
+    }
+    if (!isPasswordValid) {
+      toast.error('Password harus memenuhi semua kriteria');
+      setLoading(false);
+      return;
+    }
+    if (!passwordsMatch) {
+      toast.error('Password tidak cocok');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await registerUser({ email, password, username });
-      toast.success('Registrasi berhasil! Silakan login.');
+      await verifyOtp({ email, otp, new_password: newPassword });
+      toast.success('Password berhasil direset! Silakan login.');
       router.push('/login');
-    } catch {
-      toast.error('Registrasi gagal. Email mungkin sudah terdaftar.');
+    } catch (err: any) {
+      toast.error(err.message || 'Verifikasi OTP gagal');
     } finally {
       setLoading(false);
     }
@@ -58,69 +84,72 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e0e7ff] via-[#f1f5ff] to-[#f8fafc] px-4">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
-        {/* Ornamen background */}
+        {/* Ornamen Blur */}
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#4880FF]/10 rounded-full blur-2xl z-0"></div>
         <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-[#4880FF]/20 rounded-full blur-2xl z-0"></div>
-        
-        {/* Logo dan judul */}
+
         <div className="flex flex-col items-center z-10 relative">
           <div className="w-20 h-20 bg-[#4880FF]/10 rounded-full flex items-center justify-center mb-4">
-            <UserPlus className="w-10 h-10 text-[#4880FF]" />
+            <KeyRound className="w-10 h-10 text-[#4880FF]" />
           </div>
-          <h1 className="text-3xl font-extrabold mb-2 text-[#4880FF] tracking-tight drop-shadow-sm">Daftar Akun</h1>
+          <h1 className="text-3xl font-extrabold mb-2 text-[#4880FF] tracking-tight drop-shadow-sm">
+            Verifikasi OTP
+          </h1>
           <p className="text-slate-500 mb-6 text-center text-sm max-w-sm">
-            Buat akun <span className="font-semibold text-[#4880FF]">Picrypt</span> untuk mulai mengamankan file Anda
+            Masukkan kode OTP yang telah dikirim ke email <span className="font-semibold text-[#4880FF]">{email}</span> dan buat password baru Anda.
           </p>
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-4 z-10 relative">
+        <form onSubmit={handleVerifyOtp} className="space-y-4 z-10 relative">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Nama Lengkap</label>
-            <Input
-              type="text"
-              placeholder="Masukkan nama lengkap Anda"
-              value={username}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="focus:ring-2 focus:ring-[#4880FF]/40"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Email</label>
+            <label className="text-sm font-medium text-gray-700">Email Terdaftar</label>
             <Input
               type="email"
-              placeholder="contoh@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="focus:ring-2 focus:ring-[#4880FF]/40"
+              disabled
+              className="bg-gray-50 cursor-not-allowed"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Password</label>
+            <label className="text-sm font-medium text-gray-700">Kode OTP</label>
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={(value) => setOtp(value)}
+              containerClassName="gap-2"
+            >
+              <InputOTPGroup>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <InputOTPSlot key={index} index={index} />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Password Baru</label>
             <div className="relative">
               <Input
-                type={showPass ? 'text' : 'password'}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Buat password yang kuat"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 required
                 className="focus:ring-2 focus:ring-[#4880FF]/40 pr-10"
               />
               <button
                 type="button"
-                onClick={() => setShowPass(!showPass)}
+                onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4880FF] transition"
                 tabIndex={-1}
               >
-                {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
 
             {/* Password requirements - hanya muncul jika password tidak kosong */}
-            {password && (
+            {newPassword && (
               <div className="mt-2 space-y-2 text-sm">
                 <p className="text-gray-600 font-medium mb-1">Password harus memenuhi:</p>
                 <div className="space-y-1.5">
@@ -169,7 +198,7 @@ export default function RegisterPage() {
             <label className="text-sm font-medium text-gray-700">Konfirmasi Password</label>
             <div className="relative">
               <Input
-                type={showConfirmPass ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Ulangi password Anda"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -180,11 +209,11 @@ export default function RegisterPage() {
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmPass(!showConfirmPass)}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4880FF] transition"
                 tabIndex={-1}
               >
-                {showConfirmPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
             {confirmPassword && !passwordsMatch && (
@@ -195,31 +224,36 @@ export default function RegisterPage() {
           <Button
             type="submit"
             className="w-full bg-[#4880FF] hover:bg-[#3566d6] text-white font-semibold shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed h-11"
-            disabled={loading || !isFormValid}
+            disabled={loading || !email || !otp || !isFormValid}
           >
             {loading ? (
               <span className="flex items-center justify-center">
-                <svg className="inline mr-2 w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                <svg
+                  className="inline mr-2 w-4 h-4 animate-spin text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8z"
+                  ></path>
                 </svg>
-                Mendaftar...
+                Memproses...
               </span>
             ) : (
-              'Daftar'
+              'Reset Password'
             )}
           </Button>
         </form>
 
         <div className="mt-6 text-center z-10 relative">
-          <a
-            href="/login"
-            className="text-[#4880FF] hover:underline font-medium transition inline-flex items-center"
-          >
+          <a href="/login" className="text-[#4880FF] hover:underline font-medium transition inline-flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Sudah punya akun? Login disini
+            Kembali ke Login
           </a>
         </div>
 
@@ -230,8 +264,14 @@ export default function RegisterPage() {
 
       <style jsx global>{`
         @keyframes fade-in {
-          from { opacity: 0; transform: scale(0.95);}
-          to { opacity: 1; transform: scale(1);}
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
       `}</style>
     </main>
