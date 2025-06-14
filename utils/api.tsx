@@ -2,8 +2,8 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 // Ganti ke URL production jika perlu
-const API_URL = 'http://localhost:8000/api';
-// const API_URL = 'https://backendimageencrypt-production.up.railway.app/api';
+// const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://13.239.97.197:5000/api';
 
 // Helper untuk ambil token
 const getToken = () => Cookies.get('token');
