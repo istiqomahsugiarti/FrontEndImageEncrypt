@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 
 // Ganti ke URL production jika perlu
 // const API_URL = 'http://localhost:8000/api';
-const API_URL = 'https://exercise-device-bonus-including.trycloudflare.com/api';
+const API_URL = 'https://backend-image-encrypt.vercel.app/api';
 
 // Helper untuk ambil token
 const getToken = () => Cookies.get('token');
