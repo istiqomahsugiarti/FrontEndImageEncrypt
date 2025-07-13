@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, FileImage, X, CircleCheck, Circle, ShieldAlert, Clock, AlertTriangle, Lock, Unlock, KeyRound } from 'lucide-react';
+import { Loader2, FileImage, X, CircleCheck, Circle, ShieldAlert, Clock, AlertTriangle, Lock, Unlock, KeyRound, LockKeyhole, Shield } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import clsx from 'clsx';
 
@@ -258,7 +258,10 @@ export default function ClientPage() {
         <div className="flex justify-center gap-2 mb-8">
           <Button 
             variant={mode === 'basic' ? 'default' : 'outline'}
-            onClick={() => setMode('basic')}
+            onClick={() => {
+              setMode('basic');
+              setShowModeDescription(true);
+            }}
             className={mode === 'basic' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             {mode === 'basic' ? <CircleCheck className="w-4 h-4 mr-2" /> : <Circle className="w-4 h-4 mr-2" />}
@@ -266,14 +269,63 @@ export default function ClientPage() {
           </Button>
           <Button
             variant={mode === 'advance' ? 'default' : 'outline'} 
-            onClick={() => setMode('advance')}
+            onClick={() => {
+              setMode('advance');
+              setShowModeDescription(true);
+            }}
             className={mode === 'advance' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             {mode === 'advance' ? <CircleCheck className="w-4 h-4 mr-2" /> : <Circle className="w-4 h-4 mr-2" />}
             Advance
           </Button>
         </div>
+        {showModeDescription && (
+          <div
+            className="mb-10 transition-all duration-300 ease-in-out max-w-3xl mx-auto overflow-hidden"
+          >
+            <div className="relative rounded-xl border bg-white p-5 shadow-sm">
+              <button
+                onClick={() => setShowModeDescription(false)}
+                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-sm"
+                aria-label="Tutup deskripsi"
+              >
+                <X className="w-4 h-4" />
+              </button>
 
+              <h3 className="text-lg md:text-xl font-semibold text-slate-800 mb-2">
+                {mode === 'basic' ? 'Mode Basic 🔐' : 'Mode Advance 🔒'}
+              </h3>
+              <p className="text-sm md:text-base text-slate-600 mb-4">
+                {mode === 'basic'
+                  ? 'File akan dienkripsi secara berlapis menggunakan metode klasik hingga modern.'
+                  : 'Menggunakan seluruh lapisan Mode Basic dengan tambahan enkripsi modern yang lebih aman.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(mode === 'basic'
+                  ? [
+                      { title: 'Caesar Cipher', desc: 'Shift karakter secara sederhana.', icon: <KeyRound className="w-5 h-5 text-blue-500" /> },
+                      { title: 'Vigenère Cipher', desc: 'Gunakan kunci untuk modifikasi huruf.', icon: <Shield className="w-5 h-5 text-blue-500" /> },
+                      { title: 'AES-CBC', desc: 'Enkripsi blok chaining standar.', icon: <LockKeyhole className="w-5 h-5 text-blue-500" /> }
+                    ]
+                  : [
+                      { title: 'Caesar Cipher', desc: 'Shift karakter secara sederhana.', icon: <KeyRound className="w-5 h-5 text-green-500" /> },
+                      { title: 'Vigenère Cipher', desc: 'Gunakan kunci untuk modifikasi huruf.', icon: <Shield className="w-5 h-5 text-green-500" /> },
+                      { title: 'AES-CBC', desc: 'Enkripsi blok chaining standar.', icon: <LockKeyhole className="w-5 h-5 text-green-500" /> },
+                      { title: 'AES-GCM', desc: 'Tambahan autentikasi & integritas data.', icon: <Lock className="w-5 h-5 text-green-600" /> }
+                    ]).map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-1">{item.icon}</div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">{item.title}</p>
+                      <p className="text-xs text-slate-500">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Panel Enkripsi */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
