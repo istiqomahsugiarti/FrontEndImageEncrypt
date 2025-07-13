@@ -29,6 +29,7 @@ export default function ClientPage() {
   
   // State untuk mode aplikasi
   const [mode, setMode] = useState<'basic' | 'advance'>('basic');
+  const [showModeDescription, setShowModeDescription] = useState(true);
 
   // State untuk pengelolaan blokir pengguna
   const [isBlocked, setIsBlocked] = useState(false);
@@ -326,6 +327,7 @@ export default function ClientPage() {
             </div>
           </div>
         )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Panel Enkripsi */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
