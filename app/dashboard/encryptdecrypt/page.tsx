@@ -280,50 +280,26 @@ export default function ClientPage() {
             Advance
           </Button>
         </div>
-        {showModeDescription && (
-          <div
-            className="mb-10 transition-all duration-300 ease-in-out max-w-3xl mx-auto overflow-hidden"
-          >
+       {showModeDescription && (
+          <div className="mb-8 max-w-3xl mx-auto transition-all duration-300 ease-in-out">
             <div className="relative rounded-xl border bg-white p-5 shadow-sm">
               <button
                 onClick={() => setShowModeDescription(false)}
                 className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-sm"
                 aria-label="Tutup deskripsi"
               >
-                <X className="w-4 h-4" />
+                ×
               </button>
-
+        
               <h3 className="text-lg md:text-xl font-semibold text-slate-800 mb-2">
                 {mode === 'basic' ? 'Mode Basic 🔐' : 'Mode Advance 🔒'}
               </h3>
-              <p className="text-sm md:text-base text-slate-600 mb-4">
+        
+              <p className="text-sm md:text-base text-slate-600">
                 {mode === 'basic'
-                  ? 'File akan dienkripsi secara berlapis menggunakan metode klasik hingga modern.'
-                  : 'Menggunakan seluruh lapisan Mode Basic dengan tambahan enkripsi modern yang lebih aman.'}
+                  ? 'File akan dienkripsi menggunakan 3 lapis keamanan yang ringan dan efisien. Cocok untuk penggunaan umum dengan standar keamanan yang baik.'
+                  : 'Menggunakan total 4 lapis enkripsi berstandar tinggi, mode ini dirancang untuk memberikan perlindungan maksimal pada data sensitif.'}
               </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(mode === 'basic'
-                  ? [
-                      { title: 'Caesar Cipher', desc: 'Shift karakter secara sederhana.', icon: <KeyRound className="w-5 h-5 text-blue-500" /> },
-                      { title: 'Vigenère Cipher', desc: 'Gunakan kunci untuk modifikasi huruf.', icon: <Shield className="w-5 h-5 text-blue-500" /> },
-                      { title: 'AES-CBC', desc: 'Enkripsi blok chaining standar.', icon: <LockKeyhole className="w-5 h-5 text-blue-500" /> }
-                    ]
-                  : [
-                      { title: 'Caesar Cipher', desc: 'Shift karakter secara sederhana.', icon: <KeyRound className="w-5 h-5 text-green-500" /> },
-                      { title: 'Vigenère Cipher', desc: 'Gunakan kunci untuk modifikasi huruf.', icon: <Shield className="w-5 h-5 text-green-500" /> },
-                      { title: 'AES-CBC', desc: 'Enkripsi blok chaining standar.', icon: <LockKeyhole className="w-5 h-5 text-green-500" /> },
-                      { title: 'AES-GCM', desc: 'Tambahan autentikasi & integritas data.', icon: <Lock className="w-5 h-5 text-green-600" /> }
-                    ]).map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="mt-1">{item.icon}</div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{item.title}</p>
-                      <p className="text-xs text-slate-500">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
